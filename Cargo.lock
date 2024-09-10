@@ -3630,6 +3630,7 @@ name = "wlist_native_test"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "bytes",
  "tokio",
  "tracing",
  "tracing-subscriber",

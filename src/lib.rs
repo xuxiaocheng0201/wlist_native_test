@@ -1,6 +1,6 @@
 use std::fmt::{Debug, Display};
 
-use tokio::sync::{OnceCell, RwLock};
+use tokio::sync::{OnceCell, RwLock, RwLockReadGuard, RwLockWriteGuard};
 use tokio::task::spawn_blocking;
 use tracing_subscriber::filter::LevelFilter;
 
@@ -8,19 +8,17 @@ use tracing_subscriber::filter::LevelFilter;
 mod common;
 #[cfg(test)]
 mod web;
+#[cfg(test)]
+mod core;
 
-mod internal {
-    use tokio::sync::{RwLockReadGuard, RwLockWriteGuard};
 
-    #[allow(dead_code)]
-    pub(crate) enum InitializeGuard {
-        Read(RwLockReadGuard<'static, ()>),
-        Write(RwLockWriteGuard<'static, ()>),
-    }
+#[allow(dead_code)]
+pub enum InitializeGuard {
+    Read(RwLockReadGuard<'static, ()>),
+    Write(RwLockWriteGuard<'static, ()>),
 }
 
-#[allow(private_interfaces)]
-pub async fn initialize(unique: bool) -> anyhow::Result<internal::InitializeGuard> {
+pub async fn initialize(unique: bool) -> anyhow::Result<InitializeGuard> {
     static INIT: OnceCell<()> = OnceCell::const_new();
     INIT.get_or_try_init(|| async {
         spawn_blocking(|| {
@@ -31,14 +29,13 @@ pub async fn initialize(unique: bool) -> anyhow::Result<internal::InitializeGuar
     }).await?;
     static UNIQUE_LOCK: RwLock<()> = RwLock::const_new(());
     Ok(if unique {
-        internal::InitializeGuard::Read(UNIQUE_LOCK.read().await)
+        InitializeGuard::Read(UNIQUE_LOCK.read().await)
     } else {
-        internal::InitializeGuard::Write(UNIQUE_LOCK.write().await)
+        InitializeGuard::Write(UNIQUE_LOCK.write().await)
     })
 }
 
-#[allow(private_interfaces)]
-pub fn uninitialize(guard: internal::InitializeGuard) -> anyhow::Result<()> {
+pub fn uninitialize(guard: InitializeGuard) -> anyhow::Result<()> {
     drop(guard);
     Ok(())
 }
