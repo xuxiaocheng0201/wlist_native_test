@@ -43,3 +43,9 @@ async fn sha256() {
     sha256.update(bytes::Bytes::from_static("hello world".as_bytes())).await;
     assert_eq!(&sha256.finalize().await, "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9");
 }
+
+#[tokio::test]
+async fn initialize() -> anyhow::Result<()> {
+    let guard = super::initialize().await?;
+    super::uninitialize(guard).await
+}
