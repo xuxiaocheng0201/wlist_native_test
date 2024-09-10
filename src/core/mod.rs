@@ -5,7 +5,7 @@ mod server;
 mod client;
 
 macro_rules! c {
-    () => { &mut None };
+    ($guard: ident) => { &mut None };
 }
 use c;
 
@@ -14,12 +14,12 @@ struct InitializeGuard {
     password: &'static str,
 }
 
-async fn initialize() -> anyhow::Result<InitializeGuard> {
+async fn initialize(unique: bool) -> anyhow::Result<InitializeGuard> {
     static INIT: OnceCell<String> = OnceCell::const_new();
-    let guard = crate::initialize(true).await?;
+    let guard = crate::initialize(unique).await?;
     let password = INIT.get_or_try_init(|| async {
         let password = wlist_native::core::server::users::reset_admin_password().await?;
-        wlist_native::core::client::users::users_login(c!(), "admin".to_string(), password.clone()).await?;
+        wlist_native::core::client::users::users_login(&mut None, "admin".to_string(), password.clone()).await?;
         Ok::<_, anyhow::Error>(password)
     }).await?.as_str();
     Ok(InitializeGuard { parent: guard, password })

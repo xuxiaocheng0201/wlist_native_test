@@ -1,6 +1,6 @@
 #[tokio::test]
 async fn test() -> anyhow::Result<()> {
-    let guard = super::initialize().await?;
+    let guard = super::initialize(false).await?;
     let server = wlist_native::core::server::WlistServer::start("localhost:5322").await?;
     assert!(server.local_addr().ip().is_loopback()); assert_eq!(server.local_addr().port(), 5322);
     let manager = wlist_native::core::client::WlistClientManager::new(server.local_addr()).await?;

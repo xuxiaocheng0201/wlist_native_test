@@ -46,6 +46,6 @@ async fn sha256() {
 
 #[tokio::test]
 async fn initialize() -> anyhow::Result<()> {
-    let guard = super::initialize().await?;
+    let guard = super::initialize(false).await?;
     super::uninitialize(guard).await
 }
