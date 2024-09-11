@@ -1,11 +1,9 @@
-use tokio::sync::OnceCell;
-
 mod helper;
 mod server;
 mod client;
 
 macro_rules! c {
-    ($guard: ident) => { &mut None };
+    ($guard: ident) => { &mut $guard.get_client().await? };
 }
 use c;
 
@@ -14,8 +12,14 @@ struct InitializeGuard {
     password: &'static str,
 }
 
+impl InitializeGuard {
+    async fn get_client<'a>(&self) -> anyhow::Result<Option<&'a mut wlist_native::core::client::WlistClient<'a>>> {
+        Ok(None)
+    }
+}
+
 async fn initialize(unique: bool) -> anyhow::Result<InitializeGuard> {
-    static INIT: OnceCell<String> = OnceCell::const_new();
+    static INIT: tokio::sync::OnceCell<String> = tokio::sync::OnceCell::const_new();
     let guard = crate::initialize(unique).await?;
     let password = INIT.get_or_try_init(|| async {
         let password = wlist_native::core::server::users::reset_admin_password().await?;

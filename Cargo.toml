@@ -11,3 +11,6 @@ bytes = "^1.7"
 
 tracing-subscriber = "~0.3"
 wlist_native = { path = "../wlist_native" }
+
+test-case = "^3.3"
+toml = "~0.8"
