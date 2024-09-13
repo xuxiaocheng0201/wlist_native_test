@@ -37,10 +37,13 @@ async fn test_normal(guard: &super::InitializeGuard, storage: StorageType) -> an
     assert_eq!(info.storage_type, storage);
     assert_eq!(info.available, true);
 
+    let info = storages::test_single(guard, &info).await?;
     // tokio::try_join!(
-    // // TODO
+    //     // TODO
     // )?;
 
+    let result = wlist_native::core::client::storages::storages_remove(super::c!(guard), 0).await;
+    crate::assert_error::<_, wlist_native::common::exceptions::StorageNotFoundError>(result)?;
     wlist_native::core::client::storages::storages_remove(super::c!(guard), info.id).await
 }
 
