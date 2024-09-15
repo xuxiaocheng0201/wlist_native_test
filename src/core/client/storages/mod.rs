@@ -5,7 +5,7 @@ use wlist_native::common::data::storages::information::StorageInformation;
 
 use super::super::InitializeGuard;
 
-mod empty;
+mod none;
 mod single;
 
 static INVALID_STORAGE_NAME: LazyLock<Vec<String>> = LazyLock::new(|| vec![
@@ -23,13 +23,13 @@ static VALID_STORAGE_NAME: LazyLock<Vec<String>> = LazyLock::new(|| vec![
     "storage_name_test".to_string(),
 ]);
 
-pub async fn test_empty(guard: &InitializeGuard) -> anyhow::Result<()> {
+pub async fn test_none(guard: &InitializeGuard) -> anyhow::Result<()> {
     tokio::try_join!(
-        empty::list(guard),
-        empty::get(guard),
-        empty::remove(guard),
-        empty::rename(guard),
-        empty::set_readonly(guard),
+        none::list(guard),
+        none::get(guard),
+        none::remove(guard),
+        none::rename(guard),
+        none::set_readonly(guard),
     )?;
     Ok(())
 }

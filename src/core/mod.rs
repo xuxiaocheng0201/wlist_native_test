@@ -13,6 +13,7 @@ struct InitializeGuard {
 }
 
 impl InitializeGuard {
+    #[inline]
     async fn get_client<'a>(&self) -> anyhow::Result<Option<&'a mut wlist_native::core::client::WlistClient<'a>>> {
         Ok(None)
     }
