@@ -26,7 +26,7 @@ pub async fn initialize(unique: bool) -> anyhow::Result<InitializeGuard> {
         spawn_blocking(|| {
             tracing_subscriber::registry::Registry::default().with(tracing_subscriber::fmt::layer().with_filter(
                 <tracing_subscriber::filter::Targets as std::str::FromStr>::from_str(
-                    "wlist_native_test=trace,[{e}]=error,[{err}]=error,[{error}]=error"
+                    "wlist_native_test=trace,=info"
                 ).unwrap()
             )).init();
             wlist_native::common::workspace::initialize("run/data", "run/cache")?;

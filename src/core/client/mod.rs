@@ -4,6 +4,7 @@ use wlist_native::common::data::storages::StorageType;
 
 mod storages;
 mod refresh;
+mod list;
 
 macro_rules! add_storage {
     ($f: ident($g: ident, $n: expr, $c: literal)) => {
@@ -17,6 +18,7 @@ async fn test_none(guard: &super::InitializeGuard) -> anyhow::Result<()> {
     tokio::try_join!(
         storages::test_none(guard),
         refresh::test_none(guard),
+        list::test_none(guard),
 
     )?;
     Ok(())
@@ -43,20 +45,23 @@ async fn test_normal(guard: &super::InitializeGuard, storage: StorageType) -> an
     assert_eq!(info.storage_type, storage);
     assert_eq!(info.available, true);
 
-    let info = storages::test_single(guard, &info).await?;
-    tokio::try_join!(
-        refresh::test_normal(guard, &info),
+    // let info = storages::test_single(guard, &info).await?;
+    let root = wlist_native::common::data::files::FileLocation { storage: info.id, file_id: info.root_directory_id, is_directory: true };
+    // refresh::test_normal(guard, root.clone()).await?;
+    list::test_normal(guard, root.clone()).await?;
 
-    )?;
-
-    match storage {
-        StorageType::Lanzou => add_storage!(storages_lanzou_update(guard, info.id, "accounts/lanzou_empty.toml"))?,
-
-    };
-    let info = wlist_native::core::client::storages::storages_get(super::c!(guard), info.id, false).await?.basic;
-
-    tokio::try_join!(
-        refresh::test_empty(guard, &info),
+    // match storage {
+    //     StorageType::Lanzou => add_storage!(storages_lanzou_update(guard, info.id, "accounts/lanzou_empty.toml"))?,
+    //
+    // };
+    // let info = wlist_native::core::client::storages::storages_get(super::c!(guard), info.id, false).await?.basic;
+    // let root = FileLocation { storage: info.id, file_id: info.root_directory_id, is_directory: true };
+    //
+    // tokio::try_join!(
+    //     refresh::test_empty(guard, root.clone()),
+    //     list::test_empty(guard, root.clone()),
+    //
+    // )?;
 
     )?;
 

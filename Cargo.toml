@@ -8,9 +8,10 @@ anyhow = "^1.0"
 tracing = "~0.1"
 tokio = { version = "^1.40", features = ["macros", "rt-multi-thread"] }
 bytes = "^1.7"
-
-tracing-subscriber = "~0.3"
+either = "^1.13"
+indexmap = "^2.5"
 wlist_native = { path = "../wlist_native" }
 
+tracing-subscriber = "~0.3"
 test-case = "^3.3"
 toml = "~0.8"
