@@ -4,7 +4,7 @@ use wlist_native::common::data::files::information::FileListInformation;
 use wlist_native::common::data::files::options::{Duplicate, FilesFilter, FilesOrder, ListFileOptions};
 use wlist_native::common::data::files::FileLocation;
 use wlist_native::common::data::Direction;
-use wlist_native::core::client::files::{files_copy, files_get, files_list, files_move, files_rename};
+use wlist_native::core::client::files::{files_copy, files_list, files_move, files_rename};
 
 use crate::core::{c, InitializeGuard};
 
@@ -19,15 +19,6 @@ pub async fn test_none(guard: &InitializeGuard) -> anyhow::Result<()> {
     crate::assert_error::<_, wlist_native::common::exceptions::StorageNotFoundError>(result)?;
     let result = files_list(c!(guard), directory, options).await;
     crate::assert_error::<_, wlist_native::common::exceptions::IncorrectArgumentError>(result)?;
-
-    let result = files_get(c!(guard), file, false).await;
-    crate::assert_error::<_, wlist_native::common::exceptions::StorageNotFoundError>(result)?;
-    let result = files_get(c!(guard), directory, false).await;
-    crate::assert_error::<_, wlist_native::common::exceptions::StorageNotFoundError>(result)?;
-    let result = files_get(c!(guard), file, true).await;
-    crate::assert_error::<_, wlist_native::common::exceptions::StorageNotFoundError>(result)?;
-    let result = files_get(c!(guard), directory, true).await;
-    crate::assert_error::<_, wlist_native::common::exceptions::StorageNotFoundError>(result)?;
 
     let result = files_copy(c!(guard), file, directory, "none".to_string(), Duplicate::Error).await;
     crate::assert_error::<_, wlist_native::common::exceptions::StorageNotFoundError>(result)?;
@@ -47,16 +38,16 @@ pub async fn test_none(guard: &InitializeGuard) -> anyhow::Result<()> {
     Ok(())
 }
 
-pub async fn list(guard: &InitializeGuard, directory: FileLocation) -> anyhow::Result<FileListInformation> {
-    loop {
-        let confirmation = match files_list(c!(guard), directory, ListFileOptions {
-            filter: FilesFilter::Both, orders: Default::default(), offset: 0, limit: 0,
-        }).await? {
-            either::Either::Left(list) => break Ok(list),
-            either::Either::Right(c) => c,
-        };
-        super::refresh::refresh(guard, confirmation.token).await?;
-    }
+pub async fn list(guard: &InitializeGuard, directory: FileLocation, options: Option<ListFileOptions>) -> anyhow::Result<FileListInformation> {
+    let options = options.unwrap_or(ListFileOptions {
+        filter: FilesFilter::Both, orders: IndexMap::from([(FilesOrder::Name, Direction::ASCEND)]), offset: 0, limit: 10,
+    });
+    let confirmation = match files_list(c!(guard), directory, options.clone()).await? {
+        either::Either::Left(list) => return Ok(list),
+        either::Either::Right(c) => c,
+    };
+    super::refresh::refresh(guard, confirmation.token).await?;
+    Ok(files_list(c!(guard), directory, options).await?.unwrap_left())
 }
 
 pub async fn test_normal(guard: &InitializeGuard, root: FileLocation) -> anyhow::Result<()> {
@@ -149,6 +140,31 @@ pub async fn test_normal(guard: &InitializeGuard, root: FileLocation) -> anyhow:
     assert_eq!(list.files[3].name.as_str(), "special");
     assert_eq!(list.files[4].name.as_str(), "chunk.txt");
     assert_eq!(list.files[5].name.as_str(), "large.txt");
+
+
+    let files = list.files;
+    let list = super::list::list;
+    // all_test
+    let empty = list(guard, files[0].get_location(root.storage), None).await?;
+    assert_eq!(empty.total, 0);
+    assert_eq!(empty.filtered, 0);
+    assert_eq!(empty.files.len(), 0);
+    let hello = list(guard, files[1].get_location(root.storage), None).await?;
+    assert_eq!(hello.total, 1);
+    assert_eq!(hello.filtered, 1);
+    assert_eq!(hello.files.len(), 1);
+    assert_eq!(hello.files[0].name.as_str(), "hello.txt");
+    let recursion = list(guard, files[2].get_location(root.storage), None).await?;
+    assert_eq!(recursion.total, 1);
+    assert_eq!(recursion.filtered, 1);
+    assert_eq!(recursion.files.len(), 1);
+    assert_eq!(recursion.files[0].name.as_str(), "inner");
+    let recursion = list(guard, recursion.files[0].get_location(root.storage), None).await?;
+    assert_eq!(recursion.total, 1);
+    assert_eq!(recursion.filtered, 1);
+    assert_eq!(recursion.files.len(), 1);
+    assert_eq!(recursion.files[0].name.as_str(), "recursion.txt");
+    list(guard, files[3].get_location(root.storage), None).await?;
 
     Ok(())
 }
