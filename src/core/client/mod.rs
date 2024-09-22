@@ -6,6 +6,7 @@ mod storages;
 mod refresh;
 mod list;
 mod get;
+mod download;
 
 macro_rules! add_storage {
     ($f: ident($g: ident, $n: expr, $c: literal)) => {
@@ -21,6 +22,7 @@ async fn test_none(guard: &super::InitializeGuard) -> anyhow::Result<()> {
         refresh::test_none(guard),
         list::test_none(guard),
         get::test_none(guard),
+        download::test_none(guard),
 
     )?;
     Ok(())
@@ -47,11 +49,12 @@ async fn test_normal(guard: &super::InitializeGuard, storage: StorageType) -> an
     assert_eq!(info.storage_type, storage);
     assert_eq!(info.available, true);
 
-    // let info = storages::test_single(guard, &info).await?;
+    let info = storages::test_single(guard, &info).await?;
     let root = wlist_native::common::data::files::FileLocation { storage: info.id, file_id: info.root_directory_id, is_directory: true };
-    // refresh::test_normal(guard, root).await?;
-    // list::test_normal(guard, root).await?;
+    refresh::test_normal(guard, root).await?;
+    list::test_normal(guard, root).await?;
     get::test_normal(guard, root).await?;
+    download::test_normal(guard, root).await?;
 
     // match storage {
     //     StorageType::Lanzou => add_storage!(storages_lanzou_update(guard, info.id, "accounts/lanzou_empty.toml"))?,
@@ -64,6 +67,7 @@ async fn test_normal(guard: &super::InitializeGuard, storage: StorageType) -> an
     //     refresh::test_empty(guard, root),
     //     list::test_empty(guard, root),
     //     get::test_empty(guard, root),
+    //     download::test_empty(guard, root),
     //
     // )?;
 

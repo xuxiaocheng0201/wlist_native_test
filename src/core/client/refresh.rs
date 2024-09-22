@@ -31,6 +31,7 @@ pub async fn refresh(guard: &InitializeGuard, token: RefreshToken) -> anyhow::Re
 pub async fn test_normal(guard: &InitializeGuard, root: FileLocation) -> anyhow::Result<()> {
     let confirmation = refresh_request(c!(guard), root).await?;
     refresh(guard, confirmation.token).await?;
+
     // TODO: test pause
 
     Ok(())
