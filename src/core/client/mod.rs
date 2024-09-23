@@ -7,6 +7,7 @@ mod refresh;
 mod list;
 mod get;
 mod download;
+mod check_name;
 
 macro_rules! add_storage {
     ($f: ident($g: ident, $n: expr, $c: literal)) => {
@@ -23,6 +24,7 @@ async fn test_none(guard: &super::InitializeGuard) -> anyhow::Result<()> {
         list::test_none(guard),
         get::test_none(guard),
         download::test_none(guard),
+        check_name::test_none(guard),
 
     )?;
     Ok(())
@@ -55,6 +57,7 @@ async fn test_normal(guard: &super::InitializeGuard, storage: StorageType) -> an
     list::test_normal(guard, root).await?;
     get::test_normal(guard, root).await?;
     download::test_normal(guard, root).await?;
+    check_name::test_normal(guard, root).await?;
 
     // match storage {
     //     StorageType::Lanzou => add_storage!(storages_lanzou_update(guard, info.id, "accounts/lanzou_empty.toml"))?,
