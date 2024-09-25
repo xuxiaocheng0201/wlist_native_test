@@ -74,6 +74,8 @@ async fn test_normal(guard: &super::InitializeGuard, storage: StorageType) -> an
     //     list::test_empty(guard, root),
     //     get::test_empty(guard, root),
     //     download::test_empty(guard, root),
+    //     check_name::test_empty(guard, root),
+    //     upload::test_empty(guard, root),
     //
     // )?;
 
