@@ -26,7 +26,7 @@ pub async fn initialize(unique: bool) -> anyhow::Result<InitializeGuard> {
         spawn_blocking(|| {
             tracing_subscriber::registry::Registry::default().with(tracing_subscriber::fmt::layer().with_filter(
                 <tracing_subscriber::filter::Targets as std::str::FromStr>::from_str(
-                    "wlist_native_test=trace,=info"
+                    "wlist_native_test=trace,core_server_storages_database=trace,=info"
                 ).unwrap()
             )).init();
             wlist_native::common::workspace::initialize("run/data", "run/cache")?;
@@ -47,11 +47,17 @@ pub fn uninitialize(guard: InitializeGuard) -> anyhow::Result<()> {
 }
 
 
-pub fn assert_error<T: Debug, E: Debug + Display + Send + Sync + 'static>(result: anyhow::Result<T>) -> anyhow::Result<()> {
+pub fn assert_error<T: Debug, E: Debug + Display + Send + Sync + 'static>(result: anyhow::Result<T>) -> anyhow::Result<E> {
     match result {
         Ok(t) => Err(anyhow::anyhow!("expect error but returned ok: {t:?}")),
-        Err(e) if e.downcast_ref::<E>().is_some() => Ok(()),
-        Err(e) => Err(e),
+        Err(e) => e.downcast::<E>(),
+    }
+}
+
+pub fn assert_error_option<T: Debug, E: Debug + Display + Send + Sync + 'static>(result: anyhow::Result<Option<T>>) -> anyhow::Result<()> {
+    match result.transpose() {
+        Some(result) => assert_error::<T, E>(result).map(drop),
+        None => Ok(()),
     }
 }
 

@@ -8,11 +8,11 @@ pub async fn test_none(guard: &InitializeGuard) -> anyhow::Result<()> {
 
     // test_incorrect_parent
     let file = FileLocation { storage: 0, file_id: 0, is_directory: false, };
+    let result = upload_check_name(c!(guard), "chunk.txt".to_string(), file, false).await;
+    crate::assert_error::<_, wlist_native::common::exceptions::IncorrectArgumentError>(result)?;
     let result = upload_check_name(c!(guard), "".to_string(), file, false).await;
     crate::assert_error::<_, wlist_native::common::exceptions::IncorrectArgumentError>(result)?;
     let result = upload_check_name(c!(guard), "a".repeat(32768), file, false).await;
-    crate::assert_error::<_, wlist_native::common::exceptions::IncorrectArgumentError>(result)?;
-    let result = upload_check_name(c!(guard), "chunk.txt".to_string(), file, false).await;
     crate::assert_error::<_, wlist_native::common::exceptions::IncorrectArgumentError>(result)?;
 
     // test_incorrect_name

@@ -1,3 +1,4 @@
+use std::cmp::min;
 use std::sync::Arc;
 
 use anyhow::Error;
@@ -13,13 +14,16 @@ use wlist_native::core::client::download::{download_cancel, download_confirm, do
 use crate::core::{c, InitializeGuard};
 
 pub async fn test_none(guard: &InitializeGuard) -> anyhow::Result<()> {
-    let result = download_request(c!(guard), FileLocation { storage: 0, file_id: 0, is_directory: false, }, 0, u64::MAX).await;
+    let file = FileLocation { storage: 0, file_id: 0, is_directory: false, };
+    let root = FileLocation { storage: 0, file_id: 0, is_directory: true, };
+
+    let result = download_request(c!(guard), file, 0, u64::MAX).await;
     crate::assert_error::<_, wlist_native::common::exceptions::StorageNotFoundError>(result)?;
-    let result = download_request(c!(guard), FileLocation { storage: 0, file_id: 0, is_directory: true, }, 0, u64::MAX).await;
+    let result = download_request(c!(guard), root, 0, u64::MAX).await;
     crate::assert_error::<_, wlist_native::common::exceptions::IncorrectArgumentError>(result)?;
-    let result = download_request(c!(guard), FileLocation { storage: 0, file_id: 0, is_directory: false, }, 0, 0).await;
+    let result = download_request(c!(guard), file, 0, 0).await;
     crate::assert_error::<_, wlist_native::common::exceptions::StorageNotFoundError>(result)?;
-    let result = download_request(c!(guard), FileLocation { storage: 0, file_id: 0, is_directory: false, }, 1, 0).await;
+    let result = download_request(c!(guard), file, 1, 0).await;
     crate::assert_error::<_, wlist_native::common::exceptions::IncorrectArgumentError>(result)?;
     Ok(())
 }
@@ -47,13 +51,14 @@ pub async fn download0(guard: &InitializeGuard, token: &DownloadToken) -> anyhow
                 let mut buffer = BytesMut::new();
                 loop {
                     const BUF_CHUNK_SIZE: usize = 1 << 10;
-                    let mut buf = BytesMut::new().limit(BUF_CHUNK_SIZE);
+                    let chunk_size = min(BUF_CHUNK_SIZE, chunk.size as usize - buffer.len());
+                    let mut buf = BytesMut::new().limit(chunk_size);
                     let (tx, rx) = channel(0);
                     // TODO: output process?
                     download_stream(c!(guard), token.clone(), id, 0, &mut buf, tx, channel(true).1).await?;
                     let buf = buf.into_inner().freeze();
                     buffer.put_slice(&buf);
-                    if *rx.borrow() < BUF_CHUNK_SIZE {
+                    if *rx.borrow() < chunk_size {
                         break buffer;
                     }
                 }
