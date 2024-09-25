@@ -52,6 +52,9 @@ pub async fn download0(guard: &InitializeGuard, token: &DownloadToken) -> anyhow
                 loop {
                     const BUF_CHUNK_SIZE: usize = 1 << 10;
                     let chunk_size = min(BUF_CHUNK_SIZE, chunk.size as usize - buffer.len());
+                    if chunk_size == 0 {
+                        break buffer;
+                    }
                     let mut buf = BytesMut::new().limit(chunk_size);
                     let (tx, rx) = channel(0);
                     // TODO: output process?
