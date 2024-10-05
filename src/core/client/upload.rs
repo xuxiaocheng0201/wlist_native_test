@@ -111,7 +111,7 @@ async fn upload_and_delete(guard: &InitializeGuard, root: FileLocation, name: St
 }
 
 fn generate_md5() -> String {
-    const ALL: &str = "0123456789abcdefghijklmnopqrstuvwxyz";
+    const ALL: &str = "0123456789abcdef";
     let mut key = Vec::with_capacity(32);
     let mut rand = rand::thread_rng();
     for _ in 0..32 {

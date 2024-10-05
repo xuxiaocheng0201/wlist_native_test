@@ -333,6 +333,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "613afe47fcd5fac7ccf1db93babcb082c5994d996f20b8b159f2ad1658eb5724"
 
 [[package]]
+name = "charset"
+version = "0.1.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f1f927b07c74ba84c7e5fe4db2baeb3e996ab2688992e39ac68ce3220a677c7e"
+dependencies = [
+ "base64",
+ "encoding_rs",
+]
+
+[[package]]
 name = "chrono"
 version = "0.4.38"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -382,6 +392,15 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "variable-len-reader",
+]
+
+[[package]]
+name = "content_disposition"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ebc14a88e1463ddd193906285abe5c360c7e8564e05ccc5d501755f7fbc9ca9c"
+dependencies = [
+ "charset",
 ]
 
 [[package]]
@@ -549,6 +568,7 @@ dependencies = [
  "cached",
  "chrono",
  "common",
+ "content_disposition",
  "core_server_storages_lock",
  "core_server_storages_parts",
  "dashmap",
@@ -559,7 +579,6 @@ dependencies = [
  "pausable_future",
  "quickjs",
  "rand",
- "regex",
  "reqwest",
  "rmp-serde",
  "scraper",
@@ -569,7 +588,6 @@ dependencies = [
  "tokio",
  "tokio-stream",
  "tracing",
- "urlencoding",
 ]
 
 [[package]]
@@ -3326,12 +3344,6 @@ dependencies = [
  "idna 0.5.0",
  "percent-encoding",
 ]
-
-[[package]]
-name = "urlencoding"
-version = "2.1.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "daf8dba3b7eb870caf1ddeed7bc9d2a049f3cfdfae7cb521b087cc33ae4c49da"
 
 [[package]]
 name = "utf-8"

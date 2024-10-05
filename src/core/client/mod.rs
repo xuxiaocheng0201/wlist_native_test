@@ -71,13 +71,12 @@ async fn test_normal(guard: &super::InitializeGuard, storage: StorageType) -> an
     let info = wlist_native::core::client::storages::storages_get(super::c!(guard), info.id, false).await?.basic;
     let root = FileLocation { storage: info.id, file_id: info.root_directory_id, is_directory: true };
 
-    tokio::try_join!(
-        refresh::test_empty(guard, root),
-        list::test_empty(guard, root),
-        get::test_empty(guard, root),
-        download::test_empty(guard, root),
-        check_name::test_empty(guard, root),
-        upload::test_empty(guard, root),
+    refresh::test_empty(guard, root).await?;
+    list::test_empty(guard, root).await?;
+    get::test_empty(guard, root).await?;
+    download::test_empty(guard, root).await?;
+    check_name::test_empty(guard, root).await?;
+    upload::test_empty(guard, root).await?;
 
     )?;
 

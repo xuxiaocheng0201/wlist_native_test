@@ -122,7 +122,11 @@ pub async fn test_normal(guard: &InitializeGuard, root: FileLocation) -> anyhow:
             let confirmation = download_request(c!(guard), chunk, 1, 1).await?;
             let (bytes, l, r) = download0(guard, &confirmation.token).await?;
             assert!(l <= 1); assert!(r > 1);
-            assert_eq!(&bytes[l as usize - 1..l as usize], b"w");
+            if l == 0 {
+                assert_eq!(&bytes[1..2], b"w");
+            } else { // l == 1
+                assert_eq!(&bytes[0..1], b"w");
+            }
             Ok::<_, Error>(())
         },
         async {

@@ -2,6 +2,7 @@ use std::fmt::{Debug, Display};
 
 use tokio::sync::{OnceCell, RwLock, RwLockReadGuard, RwLockWriteGuard};
 use tokio::task::spawn_blocking;
+use tracing::Level;
 use tracing_subscriber::Layer;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
@@ -25,9 +26,12 @@ pub async fn initialize(unique: bool) -> anyhow::Result<InitializeGuard> {
     INIT.get_or_try_init(|| async {
         spawn_blocking(|| {
             tracing_subscriber::registry::Registry::default().with(tracing_subscriber::fmt::layer().with_filter(
-                <tracing_subscriber::filter::Targets as std::str::FromStr>::from_str(
-                    "wlist_native_test=trace,core_server_storages_database=trace,=info"
-                ).unwrap()
+                tracing_subscriber::filter::Targets::new()
+                    .with_target("wlist_native_test", Level::TRACE)
+                    .with_target("core_server_storages_database", Level::TRACE)
+                    .with_target("core_server_storages_lock", Level::TRACE)
+                    .with_target("core_server_storages_impl_lanzou", Level::TRACE)
+                    .with_target("", Level::INFO)
             )).init();
             wlist_native::common::workspace::initialize("run/data", "run/cache")?;
             wlist_native::common::database::initialize()
