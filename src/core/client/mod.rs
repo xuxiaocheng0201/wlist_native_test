@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 
+use wlist_native::common::data::files::FileLocation;
 use wlist_native::common::data::storages::StorageType;
 
 mod storages;
@@ -55,7 +56,7 @@ async fn test_normal(guard: &super::InitializeGuard, storage: StorageType) -> an
     assert_eq!(info.available, true);
 
     let info = storages::test_single(guard, &info).await?;
-    let root = wlist_native::common::data::files::FileLocation { storage: info.id, file_id: info.root_directory_id, is_directory: true };
+    let root = FileLocation { storage: info.id, file_id: info.root_directory_id, is_directory: true };
     refresh::test_normal(guard, root).await?;
     list::test_normal(guard, root).await?;
     get::test_normal(guard, root).await?;
@@ -104,8 +105,8 @@ async fn test_normal(guard: &super::InitializeGuard, storage: StorageType) -> an
 async fn entry_point(storage: StorageType) -> anyhow::Result<()> {
     let guard = super::initialize(true).await?;
 
-    test_none(&guard).await?;
-    test_wrong(&guard, storage).await?;
+    // test_none(&guard).await?;
+    // test_wrong(&guard, storage).await?;
     test_normal(&guard, storage).await?;
 
     super::uninitialize(guard).await

@@ -11,11 +11,10 @@ use wlist_native::common::data::files::options::Duplicate;
 use wlist_native::common::data::files::FileLocation;
 use wlist_native::core::client::download::download_request;
 use wlist_native::core::client::trash::{trash_delete, trash_trash};
-use wlist_native::core::client::upload::{upload_cancel, upload_check_name, upload_confirm, upload_finish, upload_mkdir, upload_request, upload_stream};
+use wlist_native::core::client::upload::{upload_cancel, upload_confirm, upload_finish, upload_mkdir, upload_request, upload_stream};
 use wlist_native::core::helper::hasher::Md5Hasher;
 
 use crate::core::{c, InitializeGuard};
-use crate::core::client::check_name::check_name;
 
 pub async fn test_none(guard: &InitializeGuard) -> anyhow::Result<()> {
     let root = FileLocation { storage: 0, file_id: 0, is_directory: true, };
@@ -23,7 +22,7 @@ pub async fn test_none(guard: &InitializeGuard) -> anyhow::Result<()> {
 
     // test_incorrect_storage
     let result = upload_mkdir(c!(guard), root, "directory".to_string(), Duplicate::Error).await;
-    crate::assert_error::<_, wlist_native::common::exceptions::IncorrectArgumentError>(result)?;
+    crate::assert_error::<_, wlist_native::common::exceptions::StorageNotFoundError>(result)?;
     let result = upload_request(c!(guard), root, "hello.txt".to_string(), 5, md5.clone(), vec![md5.clone()], Duplicate::Error).await;
     crate::assert_error::<_, wlist_native::common::exceptions::StorageNotFoundError>(result)?;
     Ok(())

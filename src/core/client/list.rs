@@ -9,16 +9,16 @@ use wlist_native::core::client::files::{files_copy, files_list, files_move, file
 use crate::core::{c, InitializeGuard};
 
 pub async fn test_none(guard: &InitializeGuard) -> anyhow::Result<()> {
-    let file = FileLocation { storage: 0, file_id: 0, is_directory: true, };
-    let directory = FileLocation { storage: 0, file_id: 0, is_directory: false, };
+    let file = FileLocation { storage: 0, file_id: 0, is_directory: false, };
+    let directory = FileLocation { storage: 0, file_id: 0, is_directory: true, };
     let options = ListFileOptions {
         filter: FilesFilter::Both, orders: Default::default(), offset: 0, limit: 0,
     };
 
     let result = files_list(c!(guard), file, options.clone()).await;
-    crate::assert_error::<_, wlist_native::common::exceptions::StorageNotFoundError>(result)?;
-    let result = files_list(c!(guard), directory, options).await;
     crate::assert_error::<_, wlist_native::common::exceptions::IncorrectArgumentError>(result)?;
+    let result = files_list(c!(guard), directory, options).await;
+    crate::assert_error::<_, wlist_native::common::exceptions::StorageNotFoundError>(result)?;
 
     let result = files_copy(c!(guard), file, directory, "none".to_string(), Duplicate::Error).await;
     crate::assert_error::<_, wlist_native::common::exceptions::StorageNotFoundError>(result)?;
@@ -169,7 +169,7 @@ pub async fn test_normal(guard: &InitializeGuard, root: FileLocation) -> anyhow:
     Ok(())
 }
 
-pub async fn list_empty(guard: &InitializeGuard, root: FileLocation) -> anyhow::Result<()> {
+pub async fn test_empty(guard: &InitializeGuard, root: FileLocation) -> anyhow::Result<()> {
     // normal_test
     let list = files_list(c!(guard), root, ListFileOptions {
         filter: FilesFilter::Both, orders: Default::default(), offset: 0, limit: 1,
