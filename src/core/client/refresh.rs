@@ -1,6 +1,7 @@
 use wlist_native::common::data::files::FileLocation;
 use wlist_native::common::data::files::tokens::RefreshToken;
 use wlist_native::core::client::refresh::{refresh_cancel, refresh_check, refresh_confirm, refresh_is_paused, refresh_pause, refresh_progress, refresh_request, refresh_resume};
+use wlist_native::core::client::trash::trash_refresh;
 
 use crate::core::{c, InitializeGuard};
 
@@ -29,11 +30,15 @@ pub async fn refresh(guard: &InitializeGuard, token: RefreshToken) -> anyhow::Re
 }
 
 pub async fn test_normal(guard: &InitializeGuard, root: FileLocation) -> anyhow::Result<()> {
+    // refresh_test_normal
     let confirmation = refresh_request(c!(guard), root).await?;
     refresh(guard, confirmation.token).await?;
 
     // TODO: test pause
 
+    // refresh_test_trash
+    let confirmation = trash_refresh(c!(guard), root.storage).await?;
+    refresh(guard, confirmation.token).await?;
     Ok(())
 }
 
