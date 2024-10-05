@@ -48,6 +48,7 @@ async fn test_normal(guard: &super::InitializeGuard, storage: StorageType) -> an
         StorageType::Lanzou => add_storage!(storages_lanzou_add(guard, name, "accounts/lanzou_normal.toml"))?,
 
     };
+    // let info = wlist_native::core::client::storages::storages_get(super::c!(guard), 1, false).await?.basic;
     assert_eq!(info.name.as_str(), name);
     assert_eq!(info.read_only, storage.is_share());
     assert_eq!(info.storage_type, storage);
@@ -62,22 +63,20 @@ async fn test_normal(guard: &super::InitializeGuard, storage: StorageType) -> an
     check_name::test_normal(guard, root).await?;
     upload::test_normal(guard, root).await?;
 
-    // match storage {
-    //     StorageType::Lanzou => add_storage!(storages_lanzou_update(guard, info.id, "accounts/lanzou_empty.toml"))?,
-    //
-    // };
-    // let info = wlist_native::core::client::storages::storages_get(super::c!(guard), info.id, false).await?.basic;
-    // let root = FileLocation { storage: info.id, file_id: info.root_directory_id, is_directory: true };
-    //
-    // tokio::try_join!(
-    //     refresh::test_empty(guard, root),
-    //     list::test_empty(guard, root),
-    //     get::test_empty(guard, root),
-    //     download::test_empty(guard, root),
-    //     check_name::test_empty(guard, root),
-    //     upload::test_empty(guard, root),
-    //
-    // )?;
+    match storage {
+        StorageType::Lanzou => add_storage!(storages_lanzou_update(guard, info.id, "accounts/lanzou_empty.toml"))?,
+
+    };
+    let info = wlist_native::core::client::storages::storages_get(super::c!(guard), info.id, false).await?.basic;
+    let root = FileLocation { storage: info.id, file_id: info.root_directory_id, is_directory: true };
+
+    tokio::try_join!(
+        refresh::test_empty(guard, root),
+        list::test_empty(guard, root),
+        get::test_empty(guard, root),
+        download::test_empty(guard, root),
+        check_name::test_empty(guard, root),
+        upload::test_empty(guard, root),
 
     )?;
 
@@ -105,7 +104,7 @@ async fn test_normal(guard: &super::InitializeGuard, storage: StorageType) -> an
 async fn entry_point(storage: StorageType) -> anyhow::Result<()> {
     let guard = super::initialize(true).await?;
 
-    test_empty(&guard).await?;
+    test_none(&guard).await?;
     test_wrong(&guard, storage).await?;
     test_normal(&guard, storage).await?;
 
