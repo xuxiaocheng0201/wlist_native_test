@@ -11,6 +11,7 @@ mod download;
 mod check_name;
 mod upload;
 mod trash;
+mod copy;
 
 macro_rules! add_storage {
     ($f: ident($g: ident, $n: expr, $c: literal)) => {
@@ -30,6 +31,7 @@ async fn test_none(guard: &super::InitializeGuard) -> anyhow::Result<()> {
         check_name::test_none(guard),
         upload::test_none(guard),
         trash::test_none(guard),
+        copy::test_none(guard),
 
     )?;
     Ok(())
@@ -66,6 +68,7 @@ async fn test_normal(guard: &super::InitializeGuard, storage: StorageType) -> an
     check_name::test_normal(guard, root).await?;
     upload::test_normal(guard, root).await?;
     trash::test_normal(guard, root).await?;
+    copy::test_normal(guard, root).await?;
 
     match storage {
         StorageType::Lanzou => add_storage!(storages_lanzou_update(guard, info.id, "accounts/lanzou_empty.toml"))?,
@@ -81,6 +84,7 @@ async fn test_normal(guard: &super::InitializeGuard, storage: StorageType) -> an
     check_name::test_empty(guard, root).await?;
     upload::test_empty(guard, root).await?;
     trash::test_empty(guard, root).await?;
+    copy::test_empty(guard, root).await?;
 
     )?;
 
