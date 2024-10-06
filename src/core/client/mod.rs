@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use wlist_native::common::data::files::FileLocation;
 use wlist_native::common::data::storages::StorageType;
 
@@ -13,6 +11,7 @@ mod upload;
 mod trash;
 mod copy;
 mod r#move;
+mod rename;
 
 macro_rules! add_storage {
     ($f: ident($g: ident, $n: expr, $c: literal)) => {
@@ -34,7 +33,7 @@ async fn test_none(guard: &super::InitializeGuard) -> anyhow::Result<()> {
         trash::test_none(guard),
         copy::test_none(guard),
         r#move::test_none(guard),
-
+        rename::test_none(guard),
     )?;
     Ok(())
 }
@@ -72,6 +71,7 @@ async fn test_normal(guard: &super::InitializeGuard, storage: StorageType) -> an
     trash::test_normal(guard, root).await?;
     copy::test_normal(guard, root).await?;
     r#move::test_normal(guard, root).await?;
+    rename::test_normal(guard, root).await?;
 
     match storage {
         StorageType::Lanzou => add_storage!(storages_lanzou_update(guard, info.id, "accounts/lanzou_empty.toml"))?,
@@ -89,9 +89,9 @@ async fn test_normal(guard: &super::InitializeGuard, storage: StorageType) -> an
     trash::test_empty(guard, root).await?;
     copy::test_empty(guard, root).await?;
     r#move::test_empty(guard, root).await?;
+    rename::test_empty(guard, root).await?;
 
-    )?;
-
+    // Ok(())
     let result = wlist_native::core::client::storages::storages_remove(super::c!(guard), 0).await;
     crate::assert_error::<_, wlist_native::common::exceptions::StorageNotFoundError>(result)?;
     wlist_native::core::client::storages::storages_remove(super::c!(guard), info.id).await

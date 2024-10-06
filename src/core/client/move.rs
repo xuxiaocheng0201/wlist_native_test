@@ -25,8 +25,8 @@ pub async fn test_normal(guard: &InitializeGuard, root: FileLocation) -> anyhow:
     if let Some(info) = crate::may_error::<_, wlist_native::common::exceptions::ComplexOperationError>(result)? {
         assert_eq!(info.id, chunk.id);
         assert_eq!(info.parent_id, empty.file_id);
-        assert_eq!(info.name, chunk.name);
         assert_eq!(info.is_directory, false);
+        assert_eq!(info.name, chunk.name);
         assert_ne!(info.update_time, chunk.update_time);
         files_move(c!(guard), info.get_location(root.storage), root, Duplicate::Error).await?;
     }
@@ -36,8 +36,8 @@ pub async fn test_normal(guard: &InitializeGuard, root: FileLocation) -> anyhow:
     if let Some(info) = crate::may_error::<_, wlist_native::common::exceptions::ComplexOperationError>(result)? {
         // assert_eq!(info.id, chunk.id); // May not eq for move directory.
         assert_eq!(info.parent_id, empty.file_id);
-        assert_eq!(info.name, hello.name);
         assert_eq!(info.is_directory, true);
+        assert_eq!(info.name, hello.name);
         assert_ne!(info.update_time, hello.update_time);
         files_move(c!(guard), info.get_location(root.storage), root, Duplicate::Error).await?;
     }
