@@ -10,6 +10,7 @@ mod get;
 mod download;
 mod check_name;
 mod upload;
+mod trash;
 
 macro_rules! add_storage {
     ($f: ident($g: ident, $n: expr, $c: literal)) => {
@@ -28,6 +29,7 @@ async fn test_none(guard: &super::InitializeGuard) -> anyhow::Result<()> {
         download::test_none(guard),
         check_name::test_none(guard),
         upload::test_none(guard),
+        trash::test_none(guard),
 
     )?;
     Ok(())
@@ -63,6 +65,7 @@ async fn test_normal(guard: &super::InitializeGuard, storage: StorageType) -> an
     download::test_normal(guard, root).await?;
     check_name::test_normal(guard, root).await?;
     upload::test_normal(guard, root).await?;
+    trash::test_normal(guard, root).await?;
 
     match storage {
         StorageType::Lanzou => add_storage!(storages_lanzou_update(guard, info.id, "accounts/lanzou_empty.toml"))?,
@@ -77,6 +80,7 @@ async fn test_normal(guard: &super::InitializeGuard, storage: StorageType) -> an
     download::test_empty(guard, root).await?;
     check_name::test_empty(guard, root).await?;
     upload::test_empty(guard, root).await?;
+    trash::test_empty(guard, root).await?;
 
     )?;
 
@@ -104,8 +108,8 @@ async fn test_normal(guard: &super::InitializeGuard, storage: StorageType) -> an
 async fn entry_point(storage: StorageType) -> anyhow::Result<()> {
     let guard = super::initialize(true).await?;
 
-    // test_none(&guard).await?;
-    // test_wrong(&guard, storage).await?;
+    test_none(&guard).await?;
+    test_wrong(&guard, storage).await?;
     test_normal(&guard, storage).await?;
 
     super::uninitialize(guard).await
