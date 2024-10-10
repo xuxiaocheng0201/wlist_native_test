@@ -5,7 +5,8 @@ use anyhow::Error;
 use bytes::{Buf, BufMut, Bytes, BytesMut};
 use dashmap::DashMap;
 use tokio::sync::watch::channel;
-use tokio::task::JoinSet;
+use tokio::task::{yield_now, JoinSet};
+use tracing::debug;
 
 use wlist_native::common::data::files::tokens::DownloadToken;
 use wlist_native::common::data::files::FileLocation;
@@ -42,10 +43,19 @@ pub async fn download0(guard: &InitializeGuard, token: &DownloadToken) -> anyhow
         let chunk = *chunk;
         set.spawn(async move {
             let buffer = if chunk.range {
-                let (tx, _rx) = channel(0);
-                // TODO: output process?
+                let (tx, mut rx) = channel(0);
                 let mut buffer = BytesMut::new().limit(chunk.size as usize);
-                download_stream(c!(guard), token, id, 0, &mut buffer, tx, channel(true).1).await?;
+                tokio::select! {
+                    r = async { download_stream(c!(guard), token, id, 0, &mut buffer, tx, channel(true).1).await } => r?,
+                    _ = async { loop {
+                        if rx.changed().await.is_ok() {
+                            let transferred_bytes = *rx.borrow_and_update();
+                            debug!(%transferred_bytes, "Downloading with range.")
+                        } else {
+                            yield_now().await
+                        }
+                    } } => unreachable!(),
+                }
                 buffer.into_inner()
             } else {
                 let mut buffer = BytesMut::new();
@@ -56,9 +66,18 @@ pub async fn download0(guard: &InitializeGuard, token: &DownloadToken) -> anyhow
                         break buffer;
                     }
                     let mut buf = BytesMut::new().limit(chunk_size);
-                    let (tx, rx) = channel(0);
-                    // TODO: output process?
-                    download_stream(c!(guard), token.clone(), id, 0, &mut buf, tx, channel(true).1).await?;
+                    let (tx, mut rx) = channel(0);
+                    tokio::select! {
+                        r = async { download_stream(c!(guard), token.clone(), id, 0, &mut buf, tx, channel(true).1).await } => r?,
+                        _ = async { loop {
+                            if rx.changed().await.is_ok() {
+                                let transferred_bytes = *rx.borrow_and_update();
+                                debug!(%transferred_bytes, "Downloading.")
+                            } else {
+                                yield_now().await
+                            }
+                        } } => unreachable!(),
+                    }
                     let buf = buf.into_inner().freeze();
                     buffer.put_slice(&buf);
                     if *rx.borrow() < chunk_size {

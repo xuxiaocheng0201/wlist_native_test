@@ -3,8 +3,8 @@ use std::cmp::min;
 use bytes::{Buf, BufMut, Bytes, BytesMut};
 use rand::Rng;
 use tokio::sync::watch::channel;
-use tokio::task::JoinSet;
-use tracing::warn;
+use tokio::task::{yield_now, JoinSet};
+use tracing::{debug, warn};
 
 use wlist_native::common::data::files::information::FileInformation;
 use wlist_native::common::data::files::options::Duplicate;
@@ -73,9 +73,18 @@ pub async fn upload(guard: &InitializeGuard, parent: FileLocation, name: String,
                 let token = confirmation.token.clone();
                 let mut chunk = data.slice(l..r); // slice to test upload in chunk
                 set.spawn(async move {
-                    let (tx, _rx) = channel(0);
-                    // TODO: output process?
-                    upload_stream(c!(guard), token, id, &mut chunk, tx, channel(true).1).await
+                    let (tx, mut rx) = channel(0);
+                    tokio::select! {
+                        r = async { upload_stream(c!(guard), token, id, &mut chunk, tx, channel(true).1).await } => r,
+                        _ = async { loop {
+                            if rx.changed().await.is_ok() {
+                                let transferred_bytes = *rx.borrow_and_update();
+                                debug!(%transferred_bytes, "Uploading.")
+                            } else {
+                                yield_now().await
+                            }
+                        } } => unreachable!(),
+                    }
                 });
                 i += 1;
             }
