@@ -72,7 +72,7 @@ pub async fn download0(guard: &InitializeGuard, token: &DownloadToken) -> anyhow
                         _ = async { loop {
                             if rx.changed().await.is_ok() {
                                 let transferred_bytes = *rx.borrow_and_update();
-                                debug!(%transferred_bytes, "Downloading.")
+                                debug!(%transferred_bytes, %chunk_size, "Downloading.")
                             } else {
                                 yield_now().await
                             }
