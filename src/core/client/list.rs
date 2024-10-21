@@ -166,6 +166,9 @@ pub async fn test_normal(guard: &InitializeGuard, root: FileLocation) -> anyhow:
     assert_eq!(recursion.files[0].name.as_str(), "recursion.txt");
     list(guard, files[3].get_location(root.storage), None).await?;
 
+    let special = list(guard, files[3].get_location(root.storage), None).await?;
+    assert!(special.files.iter().any(|i| i.name.as_str() == "中文.zip"), "{:?}", special);
+
     Ok(())
 }
 

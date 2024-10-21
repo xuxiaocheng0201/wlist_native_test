@@ -109,7 +109,8 @@ async fn test_normal(guard: &super::InitializeGuard, storage: StorageType) -> an
 ///      `-- inner
 ///          `-- recursion.txt (14 size, context="recursion test", md5="a1b160de5f20665f2769a6978c64c6ff")
 ///  `-- special
-///      `-- empty.txt (0 size)
+///      |-- empty.txt (0 size)
+///      `-- 中文.zip (22 size, context=0x[50,4b,05,06,00..], md5="76cdb2bad9582d23c1f6f4d868218d6c")
 /// ```
 #[test_case::test_case(StorageType::Lanzou)]
 #[tokio::test]
