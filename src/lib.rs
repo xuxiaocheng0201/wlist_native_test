@@ -1,11 +1,10 @@
 use std::fmt::{Debug, Display};
 
 use tokio::sync::{OnceCell, RwLock, RwLockReadGuard, RwLockWriteGuard};
-use tokio::task::spawn_blocking;
 use tracing::Level;
-use tracing_subscriber::Layer;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
+use tracing_subscriber::Layer;
 
 #[cfg(test)]
 mod common;
@@ -13,7 +12,6 @@ mod common;
 mod web;
 #[cfg(test)]
 mod core;
-
 
 #[allow(dead_code)]
 pub enum InitializeGuard {
@@ -24,18 +22,15 @@ pub enum InitializeGuard {
 pub async fn initialize(unique: bool) -> anyhow::Result<InitializeGuard> {
     static INIT: OnceCell<()> = OnceCell::const_new();
     INIT.get_or_try_init(|| async {
-        spawn_blocking(|| {
-            tracing_subscriber::registry::Registry::default().with(tracing_subscriber::fmt::layer().with_filter(
-                tracing_subscriber::filter::Targets::new()
-                    .with_target("wlist_native_test", Level::TRACE)
-                    .with_target("core_server_storages_database", Level::TRACE)
-                    .with_target("core_server_storages_lock", Level::TRACE)
-                    .with_target("core_server_storages_impl_lanzou", Level::TRACE)
-                    .with_target("", Level::INFO)
-            )).init();
-            wlist_native::common::workspace::initialize("run/data", "run/cache")?;
-            wlist_native::common::database::initialize()
-        }).await.map_err(Into::into).and_then(|r| r)
+        tracing_subscriber::registry::Registry::default().with(tracing_subscriber::fmt::layer().with_filter(
+            tracing_subscriber::filter::Targets::new()
+                .with_target("wlist_native_test", Level::TRACE)
+                .with_target("core_server_storages_database", Level::TRACE)
+                .with_target("core_server_storages_lock", Level::TRACE)
+                .with_target("core_server_storages_impl_lanzou", Level::TRACE)
+                .with_target("", Level::INFO)
+        )).init();
+        wlist_native::common::initialize("run/data", "run/cache").await
     }).await?;
     static UNIQUE_LOCK: RwLock<()> = RwLock::const_new(());
     Ok(if unique {
