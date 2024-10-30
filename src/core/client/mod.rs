@@ -41,6 +41,8 @@ async fn test_none(guard: &super::InitializeGuard) -> anyhow::Result<()> {
 async fn test_wrong(guard: &super::InitializeGuard, storage: StorageType) -> anyhow::Result<()> {
     let name = "storage-wrong";
     let result = match storage {
+        #[cfg(debug_assertions)]
+        StorageType::Mocker => return Ok(()),
         StorageType::Lanzou => add_storage!(storages_lanzou_add(guard, name, "accounts/lanzou_wrong.toml")),
 
     };
@@ -51,6 +53,8 @@ async fn test_wrong(guard: &super::InitializeGuard, storage: StorageType) -> any
 async fn test_normal(guard: &super::InitializeGuard, storage: StorageType) -> anyhow::Result<()> {
     let name = "storage-normal";
     let info = match storage {
+        #[cfg(debug_assertions)]
+        StorageType::Mocker => add_storage!(storages_mocker_add(guard, name, "accounts/mocker.toml"))?, // root = 0
         StorageType::Lanzou => add_storage!(storages_lanzou_add(guard, name, "accounts/lanzou_normal.toml"))?,
 
     };
@@ -74,6 +78,8 @@ async fn test_normal(guard: &super::InitializeGuard, storage: StorageType) -> an
     rename::test_normal(guard, root).await?;
 
     match storage {
+        #[cfg(debug_assertions)]
+        StorageType::Mocker => add_storage!(storages_mocker_update(guard, info.id, "accounts/mocker_empty.toml"))?, // root = 3
         StorageType::Lanzou => add_storage!(storages_lanzou_update(guard, info.id, "accounts/lanzou_empty.toml"))?,
 
     };
@@ -112,7 +118,8 @@ async fn test_normal(guard: &super::InitializeGuard, storage: StorageType) -> an
 ///      |-- empty.txt (0 size)
 ///      `-- 中文.zip (22 size, context=0x[50,4b,05,06,00..], md5="76cdb2bad9582d23c1f6f4d868218d6c")
 /// ```
-#[test_case::test_case(StorageType::Lanzou)]
+#[cfg_attr(debug_assertions, test_case::test_case(StorageType::Mocker))]
+// #[test_case::test_case(StorageType::Lanzou)]
 #[tokio::test]
 async fn entry_point(storage: StorageType) -> anyhow::Result<()> {
     let guard = super::initialize(true).await?;

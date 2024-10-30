@@ -106,6 +106,8 @@ pub async fn upload(guard: &InitializeGuard, parent: FileLocation, name: String,
 
 async fn mkdir_and_delete(guard: &InitializeGuard, root: FileLocation, name: String, duplicate: Duplicate) -> anyhow::Result<()> {
     let file = upload_mkdir(c!(guard), root, name, duplicate).await?;
+    assert_eq!(file.is_directory, true);
+    assert_eq!(file.size, Some(0));
     let list = super::list::list(guard, file.get_location(root.storage), None).await?;
     assert_eq!(list.total, 0);
     let information = trash_trash(c!(guard), file.get_location(root.storage)).await?;
