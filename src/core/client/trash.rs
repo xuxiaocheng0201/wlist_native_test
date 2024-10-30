@@ -92,7 +92,7 @@ pub async fn test_normal(guard: &InitializeGuard, root: FileLocation) -> anyhow:
     assert_eq!(list.files[1].name.as_str(), "ToRestore.txt");
 
     // test_delete_all
-    trash_delete_all(c!(guard), root.storage).await?;
+    trash_delete_all(c!(guard), root.storage).await?; // TODO: operation is too complex?
     let list = trash_list(c!(guard), root.storage, ListTrashOptions {
         filter: FilesFilter::Both, orders: Default::default(), offset: 0, limit: 1,
     }).await?.unwrap_left();
