@@ -21,6 +21,7 @@ pub async fn test_none(guard: &InitializeGuard) -> anyhow::Result<()> {
     Ok(())
 }
 
+#[allow(dead_code)]
 pub async fn get(guard: &InitializeGuard, parent: Option<i64>, location: FileLocation, check: bool) -> anyhow::Result<FileDetailsInformation> {
     loop {
         let error = match files_get(c!(guard), location, check).await {

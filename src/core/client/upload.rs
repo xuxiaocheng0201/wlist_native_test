@@ -1,9 +1,12 @@
 use std::cmp::min;
+use std::time::Duration;
 
+use anyhow::Error;
 use bytes::{Buf, BufMut, Bytes, BytesMut};
 use rand::Rng;
 use tokio::sync::watch::channel;
 use tokio::task::{yield_now, JoinSet};
+use tokio::time::sleep;
 use tracing::{debug, warn};
 
 use wlist_native::common::data::files::information::FileInformation;
@@ -63,31 +66,32 @@ pub async fn upload(guard: &InitializeGuard, parent: FileLocation, name: String,
             let l = chunk.start as usize;
             let r = l + chunk.size as usize;
             let data = data.slice(l..r);
-            const CHUNK: usize = 1 << 10;
-            let mut i = 0;
-            loop {
-                let l = i * CHUNK;
-                let r = min((i + 1) * CHUNK, len);
-                if l >= r { break; }
-                let guard = unsafe { &*(guard as *const InitializeGuard) }; // Safety: not cancelled.
-                let token = confirmation.token.clone();
-                let mut chunk = data.slice(l..r); // slice to test upload in chunk
-                set.spawn(async move {
+            let guard = unsafe { &*(guard as *const InitializeGuard) }; // Safety: not cancelled.
+            let token = confirmation.token.clone();
+            set.spawn(async move {
+                const CHUNK: usize = 1 << 10;
+                let mut i = 0;
+                loop {
+                    let l = i * CHUNK;
+                    let r = min((i + 1) * CHUNK, len);
+                    if l >= r { break; }
+                    let mut chunk = data.slice(l..r); // slice to test upload in chunk
                     let (tx, mut rx) = channel(0);
                     tokio::select! {
-                        r = async { upload_stream(c!(guard), token, id, &mut chunk, tx, channel(true).1).await } => r,
+                        r = async { upload_stream(c!(guard), token.clone(), id, &mut chunk, tx, channel(true).1).await } => r?,
                         _ = async { loop {
                             if rx.changed().await.is_ok() {
                                 let transferred_bytes = *rx.borrow_and_update();
-                                debug!(%transferred_bytes, "Uploading.")
-                            } else {
-                                yield_now().await
+                                debug!(%transferred_bytes, "Uploading.");
+                                sleep(Duration::from_millis(50)).await;
                             }
+                            yield_now().await
                         } } => unreachable!(),
                     }
-                });
-                i += 1;
-            }
+                    i += 1;
+                }
+                Ok::<_, Error>(())
+            });
         }
         for r in set.join_all().await { r?; }
     }
@@ -114,7 +118,7 @@ async fn upload_and_delete(guard: &InitializeGuard, root: FileLocation, name: St
     assert_eq!(confirmation.size, data.remaining() as u64);
     let (downloaded, from, to) = super::download::download0(guard, &confirmation.token).await?;
     assert_eq!(from, 0); assert_eq!(to, data.remaining() as u64);
-    assert_eq!(data, downloaded);
+    assert_eq!(data, downloaded, "data != downloaded");
     let information = trash_trash(c!(guard), file.get_location(root.storage)).await?;
     trash_delete(c!(guard), information.get_location(root.storage)).await
 }

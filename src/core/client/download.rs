@@ -1,11 +1,13 @@
 use std::cmp::min;
 use std::sync::Arc;
+use std::time::Duration;
 
 use anyhow::Error;
 use bytes::{Buf, BufMut, Bytes, BytesMut};
 use dashmap::DashMap;
 use tokio::sync::watch::channel;
 use tokio::task::{yield_now, JoinSet};
+use tokio::time::sleep;
 use tracing::debug;
 
 use wlist_native::common::data::files::tokens::DownloadToken;
@@ -50,10 +52,10 @@ pub async fn download0(guard: &InitializeGuard, token: &DownloadToken) -> anyhow
                     _ = async { loop {
                         if rx.changed().await.is_ok() {
                             let transferred_bytes = *rx.borrow_and_update();
-                            debug!(%transferred_bytes, "Downloading with range.")
-                        } else {
-                            yield_now().await
+                            debug!(%transferred_bytes, "Downloading with range.");
+                            sleep(Duration::from_millis(50)).await;
                         }
+                        yield_now().await
                     } } => unreachable!(),
                 }
                 buffer.into_inner()
@@ -72,10 +74,10 @@ pub async fn download0(guard: &InitializeGuard, token: &DownloadToken) -> anyhow
                         _ = async { loop {
                             if rx.changed().await.is_ok() {
                                 let transferred_bytes = *rx.borrow_and_update();
-                                debug!(%transferred_bytes, %chunk_size, "Downloading.")
-                            } else {
-                                yield_now().await
+                                debug!(%transferred_bytes, %chunk_size, "Downloading.");
+                                sleep(Duration::from_millis(50)).await;
                             }
+                            yield_now().await
                         } } => unreachable!(),
                     }
                     let buf = buf.into_inner().freeze();
