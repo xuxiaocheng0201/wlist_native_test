@@ -1,7 +1,8 @@
 use wlist_native::common::data::files::options::Duplicate;
 use wlist_native::common::data::files::FileLocation;
-use wlist_native::core::client::files::{files_copy, files_move};
+use wlist_native::core::client::files::files_copy;
 use wlist_native::core::client::trash::{trash_delete, trash_trash};
+
 use crate::core::{c, InitializeGuard};
 
 pub async fn test_none(guard: &InitializeGuard) -> anyhow::Result<()> {

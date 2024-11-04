@@ -11,7 +11,7 @@ bytes = "^1.8"
 either = "^1.13"
 indexmap = "^2.6"
 rand = "~0.8"
-wlist_native = { path = "../wlist_native" }
+wlist_native = { path = "../wlist_native", features = ["mocker"] }
 
 tracing-subscriber = "~0.3"
 test-case = "^3.3" # TODO: rstest = "~0.23"
