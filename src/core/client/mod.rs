@@ -41,7 +41,6 @@ async fn test_none(guard: &super::InitializeGuard) -> anyhow::Result<()> {
 async fn test_wrong(guard: &super::InitializeGuard, storage: StorageType) -> anyhow::Result<()> {
     let name = "storage-wrong";
     let result = match storage {
-        #[cfg(debug_assertions)]
         StorageType::Mocker => return Ok(()),
         StorageType::Lanzou => add_storage!(storages_lanzou_add(guard, name, "accounts/lanzou_wrong.toml")),
 
@@ -53,7 +52,6 @@ async fn test_wrong(guard: &super::InitializeGuard, storage: StorageType) -> any
 async fn test_normal(guard: &super::InitializeGuard, storage: StorageType) -> anyhow::Result<()> {
     let name = "storage-normal";
     let info = match storage {
-        #[cfg(debug_assertions)]
         StorageType::Mocker => add_storage!(storages_mocker_add(guard, name, "accounts/mocker.toml"))?, // root = 0
         StorageType::Lanzou => add_storage!(storages_lanzou_add(guard, name, "accounts/lanzou_normal.toml"))?,
 
@@ -78,7 +76,6 @@ async fn test_normal(guard: &super::InitializeGuard, storage: StorageType) -> an
     rename::test_normal(guard, root).await?;
 
     match storage {
-        #[cfg(debug_assertions)]
         StorageType::Mocker => add_storage!(storages_mocker_update(guard, info.id, "accounts/mocker_empty.toml"))?, // root = 3
         StorageType::Lanzou => add_storage!(storages_lanzou_update(guard, info.id, "accounts/lanzou_empty.toml"))?,
 

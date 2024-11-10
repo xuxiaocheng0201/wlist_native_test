@@ -56,6 +56,10 @@ pub async fn close_thumbnail(guard: &InitializeGuard, information: &FileDetailsI
 }
 
 pub async fn test_normal(guard: &InitializeGuard, root: FileLocation) -> anyhow::Result<()> {
+    let information = files_get(c!(guard), root, false).await?;
+    assert_eq!(information.path, Vec::<String>::new());
+    close_thumbnail(guard, &information).await?;
+
     let list = super::list::list(guard, root, None).await?;
 
     let location = FileLocation { storage: root.storage, file_id: list.files[0].id, is_directory: false, };

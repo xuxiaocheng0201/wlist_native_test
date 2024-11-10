@@ -55,16 +55,16 @@ pub async fn test_normal(guard: &InitializeGuard, root: FileLocation) -> anyhow:
     let list = files_list(c!(guard), root, ListFileOptions {
         filter: FilesFilter::Both, orders: Default::default(), offset: 0, limit: 7,
     }).await?.unwrap_left(); // this is tested after refresh, so needn't refresh.
-    assert_eq!(list.total, 6);
-    assert_eq!(list.filtered, 6);
+    assert_eq!(list.total_file, 2);
+    assert_eq!(list.total_directory, 4);
     assert_eq!(list.files.len(), 6);
 
     // normal_test_limit
     let list = files_list(c!(guard), root, ListFileOptions {
         filter: FilesFilter::Both, orders: IndexMap::from([(FilesOrder::Name, Direction::ASCEND)]), offset: 0, limit: 4,
     }).await?.unwrap_left();
-    assert_eq!(list.total, 6);
-    assert_eq!(list.filtered, 6);
+    assert_eq!(list.total_file, 2);
+    assert_eq!(list.total_directory, 4);
     assert_eq!(list.files.len(), 4);
     assert_eq!(list.files[0].name.as_str(), "chunk.txt");
     assert_eq!(list.files[1].name.as_str(), "empty");
@@ -75,8 +75,8 @@ pub async fn test_normal(guard: &InitializeGuard, root: FileLocation) -> anyhow:
     let list = files_list(c!(guard), root, ListFileOptions {
         filter: FilesFilter::Both, orders: IndexMap::from([(FilesOrder::Name, Direction::ASCEND)]), offset: 4, limit: 3,
     }).await?.unwrap_left();
-    assert_eq!(list.total, 6);
-    assert_eq!(list.filtered, 6);
+    assert_eq!(list.total_file, 2);
+    assert_eq!(list.total_directory, 4);
     assert_eq!(list.files.len(), 2);
     assert_eq!(list.files[0].name.as_str(), "recursion");
     assert_eq!(list.files[1].name.as_str(), "special");
@@ -86,25 +86,33 @@ pub async fn test_normal(guard: &InitializeGuard, root: FileLocation) -> anyhow:
     let list = files_list(c!(guard), root, ListFileOptions {
         filter: FilesFilter::OnlyDirectories, orders: Default::default(), offset: 0, limit: 5,
     }).await?.unwrap_left();
-    assert_eq!(list.total, 6);
-    assert_eq!(list.filtered, 4);
+    assert_eq!(list.total_file, 2);
+    assert_eq!(list.total_directory, 4);
     assert_eq!(list.files.len(), 4);
 
     // filter_test_file
     let list = files_list(c!(guard), root, ListFileOptions {
         filter: FilesFilter::OnlyFiles, orders: Default::default(), offset: 0, limit: 3,
     }).await?.unwrap_left();
-    assert_eq!(list.total, 6);
-    assert_eq!(list.filtered, 2);
+    assert_eq!(list.total_file, 2);
+    assert_eq!(list.total_directory, 4);
     assert_eq!(list.files.len(), 2);
+
+    // filter_test_count
+    let list = files_list(c!(guard), root, ListFileOptions {
+        filter: FilesFilter::OnlyFiles, orders: Default::default(), offset: 0, limit: 0,
+    }).await?.unwrap_left();
+    assert_eq!(list.total_file, 2);
+    assert_eq!(list.total_directory, 4);
+    assert_eq!(list.files.len(), 0);
 
 
     // order_test_name
     let list = files_list(c!(guard), root, ListFileOptions {
         filter: FilesFilter::Both, orders: IndexMap::from([(FilesOrder::Name, Direction::ASCEND)]), offset: 0, limit: 7,
     }).await?.unwrap_left();
-    assert_eq!(list.total, 6);
-    assert_eq!(list.filtered, 6);
+    assert_eq!(list.total_file, 2);
+    assert_eq!(list.total_directory, 4);
     assert_eq!(list.files.len(), 6);
     assert_eq!(list.files[0].name.as_str(), "chunk.txt");
     assert_eq!(list.files[1].name.as_str(), "empty");
@@ -117,8 +125,8 @@ pub async fn test_normal(guard: &InitializeGuard, root: FileLocation) -> anyhow:
     let list = files_list(c!(guard), root, ListFileOptions {
         filter: FilesFilter::Both, orders: IndexMap::from([(FilesOrder::Suffix, Direction::ASCEND), (FilesOrder::Name, Direction::DESCEND)]), offset: 0, limit: 7,
     }).await?.unwrap_left();
-    assert_eq!(list.total, 6);
-    assert_eq!(list.filtered, 6);
+    assert_eq!(list.total_file, 2);
+    assert_eq!(list.total_directory, 4);
     assert_eq!(list.files.len(), 6);
     assert_eq!(list.files[0].name.as_str(), "special");
     assert_eq!(list.files[1].name.as_str(), "recursion");
@@ -131,8 +139,8 @@ pub async fn test_normal(guard: &InitializeGuard, root: FileLocation) -> anyhow:
     let list = files_list(c!(guard), root, ListFileOptions {
         filter: FilesFilter::Both, orders: IndexMap::from([(FilesOrder::Directory, Direction::ASCEND), (FilesOrder::Name, Direction::ASCEND)]), offset: 0, limit: 7,
     }).await?.unwrap_left();
-    assert_eq!(list.total, 6);
-    assert_eq!(list.filtered, 6);
+    assert_eq!(list.total_file, 2);
+    assert_eq!(list.total_directory, 4);
     assert_eq!(list.files.len(), 6);
     assert_eq!(list.files[0].name.as_str(), "empty");
     assert_eq!(list.files[1].name.as_str(), "hello");
@@ -146,22 +154,22 @@ pub async fn test_normal(guard: &InitializeGuard, root: FileLocation) -> anyhow:
     let list = super::list::list;
     // all_test
     let empty = list(guard, files[0].get_location(root.storage), None).await?;
-    assert_eq!(empty.total, 0);
-    assert_eq!(empty.filtered, 0);
+    assert_eq!(empty.total_file, 0);
+    assert_eq!(empty.total_directory, 0);
     assert_eq!(empty.files.len(), 0);
     let hello = list(guard, files[1].get_location(root.storage), None).await?;
-    assert_eq!(hello.total, 1);
-    assert_eq!(hello.filtered, 1);
+    assert_eq!(hello.total_file, 1);
+    assert_eq!(hello.total_directory, 0);
     assert_eq!(hello.files.len(), 1);
     assert_eq!(hello.files[0].name.as_str(), "hello.txt");
     let recursion = list(guard, files[2].get_location(root.storage), None).await?;
-    assert_eq!(recursion.total, 1);
-    assert_eq!(recursion.filtered, 1);
+    assert_eq!(recursion.total_file, 0);
+    assert_eq!(recursion.total_directory, 1);
     assert_eq!(recursion.files.len(), 1);
     assert_eq!(recursion.files[0].name.as_str(), "inner");
     let recursion = list(guard, recursion.files[0].get_location(root.storage), None).await?;
-    assert_eq!(recursion.total, 1);
-    assert_eq!(recursion.filtered, 1);
+    assert_eq!(recursion.total_file, 1);
+    assert_eq!(recursion.total_directory, 0);
     assert_eq!(recursion.files.len(), 1);
     assert_eq!(recursion.files[0].name.as_str(), "recursion.txt");
     list(guard, files[3].get_location(root.storage), None).await?;
@@ -177,8 +185,8 @@ pub async fn test_empty(guard: &InitializeGuard, root: FileLocation) -> anyhow::
     let list = files_list(c!(guard), root, ListFileOptions {
         filter: FilesFilter::Both, orders: Default::default(), offset: 0, limit: 1,
     }).await?.unwrap_left(); // this is tested after refresh, so needn't refresh.
-    assert_eq!(list.total, 0);
-    assert_eq!(list.filtered, 0);
+    assert_eq!(list.total_file, 0);
+    assert_eq!(list.total_directory, 0);
     assert_eq!(list.files.len(), 0);
     Ok(())
 }

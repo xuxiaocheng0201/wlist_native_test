@@ -109,7 +109,8 @@ async fn mkdir_and_delete(guard: &InitializeGuard, root: FileLocation, name: Str
     assert_eq!(file.is_directory, true);
     assert_eq!(file.size, Some(0));
     let list = super::list::list(guard, file.get_location(root.storage), None).await?;
-    assert_eq!(list.total, 0);
+    assert_eq!(list.total_file, 0);
+    assert_eq!(list.total_directory, 0);
     let information = trash_trash(c!(guard), file.get_location(root.storage)).await?;
     trash_delete(c!(guard), information.get_location(root.storage)).await
 }
