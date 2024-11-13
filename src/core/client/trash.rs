@@ -45,8 +45,8 @@ pub async fn test_normal(guard: &InitializeGuard, root: FileLocation) -> anyhow:
     let list = trash_list(c!(guard), root.storage, ListTrashOptions {
         filter: FilesFilter::Both, orders: Default::default(), offset: 0, limit: 1,
     }).await?.unwrap_left(); // this is tested after refresh, so needn't refresh.
-    assert_eq!(list.total, 0);
-    assert_eq!(list.filtered, 0);
+    assert_eq!(list.total_file, 0);
+    assert_eq!(list.total_directory, 0);
     assert_eq!(list.files.len(), 0);
 
     let restore = super::upload::upload(guard, root, "ToRestore.txt".to_string(), Bytes::from_static(b"to restore."), Duplicate::Error).await?;
@@ -85,8 +85,8 @@ pub async fn test_normal(guard: &InitializeGuard, root: FileLocation) -> anyhow:
     let list = trash_list(c!(guard), root.storage, ListTrashOptions {
         filter: FilesFilter::Both, orders: IndexMap::from([(TrashesOrder::Directory, Direction::ASCEND)]), offset: 0, limit: 3,
     }).await?.unwrap_left();
-    assert_eq!(list.total, 2);
-    assert_eq!(list.filtered, 2);
+    assert_eq!(list.total_file, 1);
+    assert_eq!(list.total_directory, 1);
     assert_eq!(list.files.len(), 2);
     assert_eq!(list.files[0].name.as_str(), "ToDirectory");
     assert_eq!(list.files[1].name.as_str(), "ToRestore.txt");
@@ -96,8 +96,8 @@ pub async fn test_normal(guard: &InitializeGuard, root: FileLocation) -> anyhow:
     let list = trash_list(c!(guard), root.storage, ListTrashOptions {
         filter: FilesFilter::Both, orders: Default::default(), offset: 0, limit: 1,
     }).await?.unwrap_left();
-    assert_eq!(list.total, 0);
-    assert_eq!(list.filtered, 0);
+    assert_eq!(list.total_file, 0);
+    assert_eq!(list.total_directory, 0);
     assert_eq!(list.files.len(), 0);
 
     Ok(())
