@@ -61,6 +61,11 @@ async fn test_normal(guard: &super::InitializeGuard, storage: StorageType) -> an
     assert_eq!(info.read_only, storage.is_share());
     assert_eq!(info.storage_type, storage);
     assert_eq!(info.available, true);
+    crate::assert_error::<_, wlist_native::common::exceptions::DuplicateStorageError>(match storage {
+        StorageType::Mocker => add_storage!(storages_mocker_add(guard, name, "accounts/mocker.toml")),
+        StorageType::Lanzou => add_storage!(storages_lanzou_add(guard, name, "accounts/lanzou_normal.toml")),
+
+    })?;
 
     let info = storages::test_single(guard, &info).await?;
     let root = FileLocation { storage: info.id, file_id: info.root_directory_id, is_directory: true };
