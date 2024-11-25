@@ -80,6 +80,19 @@ async fn test_normal(guard: &super::InitializeGuard, storage: StorageType) -> an
     r#move::test_normal(guard, root).await?;
     rename::test_normal(guard, root).await?;
 
+    {
+        // extra test for files_get on root
+        let info = wlist_native::core::client::storages::storages_get(super::c!(guard), info.id, false).await?;
+        assert!(
+            info.indexed_size == (4 << 10) + (12 << 20) + 12 + 14 ||
+            info.indexed_size == (4 << 10) + (12 << 20) + 12 + 14 + 22,
+            "{}", info.indexed_size
+        );
+        assert_eq!(info.size, Some(info.indexed_size)); // fully indexed.
+        let root = wlist_native::core::client::files::files_get(super::c!(guard), root, true, false).await?;
+        assert_eq!(info.as_file_details().basic, root.basic);
+        assert_eq!(root.basic.size, info.size);
+    }
     match storage {
         StorageType::Mocker => add_storage!(storages_mocker_update(guard, info.id, "accounts/mocker_empty.toml"))?, // root = 3
         StorageType::Lanzou => add_storage!(storages_lanzou_update(guard, info.id, "accounts/lanzou_empty.toml"))?,
