@@ -19,6 +19,16 @@ macro_rules! add_storage {
             super::c!($g), $n.into(), toml::from_str(include_str!($c))?
         ).await
     };
+    ($f: ident($g: ident, $n: expr, $c: literal, None)) => {
+        wlist_native::core::client::storages::$f(
+            super::c!($g), $n.into(), toml::from_str(include_str!($c))?, None
+        ).await
+    };
+    ($f: ident($g: ident, $n: expr, $c: literal, Some($t: literal))) => {
+        wlist_native::core::client::storages::$f(
+            super::c!($g), $n.into(), toml::from_str(include_str!($c))?, Some(toml::from_str(include_str!($t))?)
+        ).await
+    };
 }
 
 async fn test_none(guard: &super::InitializeGuard) -> anyhow::Result<()> {
@@ -43,6 +53,7 @@ async fn test_wrong(guard: &super::InitializeGuard, storage: StorageType) -> any
     let result = match storage {
         StorageType::Mocker => return Ok(()),
         StorageType::Lanzou => add_storage!(storages_lanzou_add(guard, name, "accounts/lanzou_wrong.toml")),
+        StorageType::Baidu => add_storage!(storages_baidu_add(guard, name, "accounts/baidu_wrong.toml", None))
 
     };
     crate::assert_error::<_, wlist_native::common::exceptions::IncorrectStorageAccountError>(result)?;
@@ -51,21 +62,21 @@ async fn test_wrong(guard: &super::InitializeGuard, storage: StorageType) -> any
 
 async fn test_normal(guard: &super::InitializeGuard, storage: StorageType) -> anyhow::Result<()> {
     let name = "storage-normal";
-    let info = match storage {
-        StorageType::Mocker => add_storage!(storages_mocker_add(guard, name, "accounts/mocker.toml"))?, // root = 0
-        StorageType::Lanzou => add_storage!(storages_lanzou_add(guard, name, "accounts/lanzou_normal.toml"))?,
+    async fn add_storage(name: &str, guard: &super::InitializeGuard, storage: StorageType) -> anyhow::Result<wlist_native::common::data::storages::information::StorageInformation> {
+        Ok(match storage {
+            StorageType::Mocker => add_storage!(storages_mocker_add(guard, name, "accounts/mocker.toml"))?, // root = 0
+            StorageType::Lanzou => add_storage!(storages_lanzou_add(guard, name, "accounts/lanzou_normal.toml"))?,
+            StorageType::Baidu => add_storage!(storages_baidu_add(guard, name, "accounts/baidu_normal.toml", Some("accounts/baidu_token.toml")))?,
 
-    };
+        })
+    }
+    let info = add_storage(name, guard, storage).await?;
     // let info = wlist_native::core::client::storages::storages_get(super::c!(guard), 1, false).await?.basic;
     assert_eq!(info.name.as_str(), name);
     assert_eq!(info.read_only, storage.is_share());
     assert_eq!(info.storage_type, storage);
     assert_eq!(info.available, true);
-    crate::assert_error::<_, wlist_native::common::exceptions::DuplicateStorageError>(match storage {
-        StorageType::Mocker => add_storage!(storages_mocker_add(guard, name, "accounts/mocker.toml")),
-        StorageType::Lanzou => add_storage!(storages_lanzou_add(guard, name, "accounts/lanzou_normal.toml")),
-
-    })?;
+    crate::assert_error::<_, wlist_native::common::exceptions::DuplicateStorageError>(add_storage(name, guard, storage).await)?;
 
     let info = storages::test_single(guard, &info).await?;
     let root = FileLocation { storage: info.id, file_id: info.root_directory_id, is_directory: true };
@@ -96,6 +107,7 @@ async fn test_normal(guard: &super::InitializeGuard, storage: StorageType) -> an
     match storage {
         StorageType::Mocker => add_storage!(storages_mocker_update(guard, info.id, "accounts/mocker_empty.toml"))?, // root = 3
         StorageType::Lanzou => add_storage!(storages_lanzou_update(guard, info.id, "accounts/lanzou_empty.toml"))?,
+        StorageType::Baidu => add_storage!(storages_baidu_update(guard, info.id, "accounts/baidu_empty.toml"))?,
 
     };
     let info = wlist_native::core::client::storages::storages_get(super::c!(guard), info.id, false).await?.basic;
@@ -135,6 +147,7 @@ async fn test_normal(guard: &super::InitializeGuard, storage: StorageType) -> an
 /// ```
 #[test_case::test_case(StorageType::Mocker)]
 #[test_case::test_case(StorageType::Lanzou)]
+#[test_case::test_case(StorageType::Baidu)]
 #[tokio::test]
 async fn entry_point(storage: StorageType) -> anyhow::Result<()> {
     let guard = super::initialize(true).await?;
