@@ -12,6 +12,7 @@ use tracing::{debug, warn};
 use wlist_native::common::data::files::information::FileInformation;
 use wlist_native::common::data::files::options::Duplicate;
 use wlist_native::common::data::files::FileLocation;
+use wlist_native::common::exceptions::FileInLockError;
 use wlist_native::core::client::download::download_request;
 use wlist_native::core::client::trash::{trash_delete, trash_trash};
 use wlist_native::core::client::upload::{upload_cancel, upload_confirm, upload_finish, upload_mkdir, upload_request, upload_stream};
@@ -26,7 +27,7 @@ pub async fn test_none(guard: &InitializeGuard) -> anyhow::Result<()> {
     // test_incorrect_storage
     let result = upload_mkdir(c!(guard), root, "directory".to_string(), Duplicate::Error).await;
     crate::assert_error::<_, wlist_native::common::exceptions::StorageNotFoundError>(result)?;
-    let result = upload_request(c!(guard), root, "hello.txt".to_string(), 5, md5.clone(), vec![md5.clone()], Duplicate::Error).await;
+    let result = upload_request(c!(guard), root, "hello.txt".to_string(), 5, md5.clone(), Some(vec![md5.clone()]), Duplicate::Error).await;
     crate::assert_error::<_, wlist_native::common::exceptions::StorageNotFoundError>(result)?;
     Ok(())
 }
@@ -58,7 +59,7 @@ pub async fn upload(guard: &InitializeGuard, parent: FileLocation, name: String,
         if md5s.is_empty() { md5s.push(md5.clone()); }
         (md5, md5s)
     };
-    let confirmation = upload_request(c!(guard), parent, name, len as u64, md5, md5s, duplicate).await?;
+    let confirmation = upload_request(c!(guard), parent, name, len as u64, md5, Some(md5s), duplicate).await?;
     if !confirmation.done {
         let information = upload_confirm(c!(guard), confirmation.token.clone()).await?;
         let mut set = JoinSet::new();
@@ -161,7 +162,7 @@ pub async fn test_normal(guard: &InitializeGuard, root: FileLocation) -> anyhow:
 
     // upload_test_cancel
     let md5 = generate_md5();
-    let confirmation = upload_request(c!(guard), root, "hello.txt".to_string(), 5, md5.clone(), vec![md5.clone()], Duplicate::Error).await?;
+    let confirmation = upload_request(c!(guard), root, "hello.txt".to_string(), 5, md5.clone(), Some(vec![md5.clone()]), Duplicate::Error).await?;
     if confirmation.done {
         warn!(%md5, "upload_test_cancel: uploaded done.");
         let information = upload_finish(c!(guard), confirmation.token).await?;
@@ -184,28 +185,28 @@ pub async fn test_empty(guard: &InitializeGuard, root: FileLocation) -> anyhow::
     let file = FileLocation { storage: 0, file_id: 0, is_directory: false, };
     let result = upload_mkdir(c!(guard), file, "directory".to_string(), Duplicate::Error).await;
     crate::assert_error::<_, wlist_native::common::exceptions::IncorrectArgumentError>(result)?;
-    let result = upload_request(c!(guard), file, "chunk.txt".to_string(), 5, md5.clone(), vec![md5.clone()], Duplicate::Error).await;
+    let result = upload_request(c!(guard), file, "chunk.txt".to_string(), 5, md5.clone(), Some(vec![md5.clone()]), Duplicate::Error).await;
     crate::assert_error::<_, wlist_native::common::exceptions::IncorrectArgumentError>(result)?;
 
     // test_incorrect_name
     let result = upload_mkdir(c!(guard), root, "".to_string(), Duplicate::Error).await;
     crate::assert_error::<_, wlist_native::common::exceptions::IncorrectArgumentError>(result)?;
-    let result = upload_request(c!(guard), root, "".to_string(), 5, md5.clone(), vec![md5.clone()], Duplicate::Error).await;
+    let result = upload_request(c!(guard), root, "".to_string(), 5, md5.clone(), Some(vec![md5.clone()]), Duplicate::Error).await;
     crate::assert_error::<_, wlist_native::common::exceptions::IncorrectArgumentError>(result)?;
     let result = upload_mkdir(c!(guard), root, "a".repeat(32768), Duplicate::Error).await;
     crate::assert_error::<_, wlist_native::common::exceptions::IncorrectArgumentError>(result)?;
-    let result = upload_request(c!(guard), root, "a".repeat(32768), 5, md5.clone(), vec![md5.clone()], Duplicate::Error).await;
+    let result = upload_request(c!(guard), root, "a".repeat(32768), 5, md5.clone(), Some(vec![md5.clone()]), Duplicate::Error).await;
     crate::assert_error::<_, wlist_native::common::exceptions::IncorrectArgumentError>(result)?;
 
     // test_incorrect_md5
     for invalid_md5 in ["".to_string(), "A".to_string(), "a".repeat(30) + "0A", "A".repeat(32), "-".repeat(32)] {
-        let result = upload_request(c!(guard), root, "hello.txt".to_string(), 5, invalid_md5.clone(), vec![invalid_md5.clone()], Duplicate::Error).await;
+        let result = upload_request(c!(guard), root, "hello.txt".to_string(), 5, invalid_md5.clone(), Some(vec![invalid_md5.clone()]), Duplicate::Error).await;
         crate::assert_error::<_, wlist_native::common::exceptions::IncorrectArgumentError>(result)?;
-        let result = upload_request(c!(guard), root, "hello.txt".to_string(), 5, invalid_md5.clone(), vec![md5.clone()], Duplicate::Error).await;
+        let result = upload_request(c!(guard), root, "hello.txt".to_string(), 5, invalid_md5.clone(), Some(vec![md5.clone()]), Duplicate::Error).await;
         crate::assert_error::<_, wlist_native::common::exceptions::IncorrectArgumentError>(result)?;
-        let result = upload_request(c!(guard), root, "hello.txt".to_string(), 5, md5.clone(), vec![md5.clone(); 2], Duplicate::Error).await;
+        let result = upload_request(c!(guard), root, "hello.txt".to_string(), 5, md5.clone(), Some(vec![md5.clone(); 2]), Duplicate::Error).await;
         crate::assert_error::<_, wlist_native::common::exceptions::IncorrectArgumentError>(result)?;
-        let result = upload_request(c!(guard), root, "hello.txt".to_string(), 5, md5.clone(), vec![], Duplicate::Error).await;
+        let result = upload_request(c!(guard), root, "hello.txt".to_string(), 5, md5.clone(), Some(vec![]), Duplicate::Error).await;
         crate::assert_error::<_, wlist_native::common::exceptions::IncorrectArgumentError>(result)?;
     }
     Ok(())
