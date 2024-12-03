@@ -12,7 +12,6 @@ use tracing::{debug, warn};
 use wlist_native::common::data::files::information::FileInformation;
 use wlist_native::common::data::files::options::Duplicate;
 use wlist_native::common::data::files::FileLocation;
-use wlist_native::common::exceptions::FileInLockError;
 use wlist_native::core::client::download::download_request;
 use wlist_native::core::client::trash::{trash_delete, trash_trash};
 use wlist_native::core::client::upload::{upload_cancel, upload_confirm, upload_finish, upload_mkdir, upload_request, upload_stream};
