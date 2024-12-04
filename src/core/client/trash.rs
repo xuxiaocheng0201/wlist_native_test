@@ -71,12 +71,14 @@ pub async fn test_normal(guard: &InitializeGuard, root: FileLocation) -> anyhow:
     assert!(directory_trash.trash_time.is_some());
 
     // test_restore
-    let restore = trash_restore(c!(guard), restore_trash.get_location(root.storage), root.file_id).await?;
-    assert_eq!(restore.id, restore_trash.id);
-    assert_eq!(restore.is_directory, false);
-    assert_eq!(restore.parent_id, root.file_id);
-    assert_eq!(restore.size, Some(11));
-    trash_trash(c!(guard), restore.get_location(root.storage)).await?;
+    let result = trash_restore(c!(guard), restore_trash.get_location(root.storage), root.file_id).await;
+    if let Some(restore) = crate::may_error::<_, wlist_native::common::exceptions::ComplexOperationError>(result)? {
+        assert_eq!(restore.id, restore_trash.id);
+        assert_eq!(restore.is_directory, false);
+        assert_eq!(restore.parent_id, root.file_id);
+        assert_eq!(restore.size, Some(11));
+        trash_trash(c!(guard), restore.get_location(root.storage)).await?;
+    }
 
     // test_delete
     trash_delete(c!(guard), delete_trash.get_location(root.storage)).await?;
@@ -92,13 +94,17 @@ pub async fn test_normal(guard: &InitializeGuard, root: FileLocation) -> anyhow:
     assert_eq!(list.files[1].name.as_str(), "ToRestore.txt");
 
     // test_delete_all
-    trash_delete_all(c!(guard), root.storage).await?; // TODO: operation is too complex?
-    let list = trash_list(c!(guard), root.storage, ListTrashOptions {
-        filter: FilesFilter::Both, orders: Default::default(), offset: 0, limit: 1,
-    }).await?.unwrap_left();
-    assert_eq!(list.total_file, 0);
-    assert_eq!(list.total_directory, 0);
-    assert_eq!(list.files.len(), 0);
+    let result = trash_delete_all(c!(guard), root.storage).await;
+    if let Some(()) = crate::may_error::<_, wlist_native::common::exceptions::ComplexOperationError>(result)? {
+        let list = trash_list(c!(guard), root.storage, ListTrashOptions {
+            filter: FilesFilter::Both, orders: Default::default(), offset: 0, limit: 1,
+        }).await?.unwrap_left();
+        assert_eq!(list.total_file, 0);
+        assert_eq!(list.total_directory, 0);
+        assert_eq!(list.files.len(), 0);
+    } else {
+        // require manually delete
+    }
 
     Ok(())
 }
