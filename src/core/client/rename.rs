@@ -44,6 +44,7 @@ pub async fn test_normal(guard: &InitializeGuard, root: FileLocation) -> anyhow:
         assert_eq!(info.is_directory, true);
         assert_eq!(info.name.as_str(), "directory");
         // assert_ne!(info.update_time, empty.update_time);
+        tokio::time::sleep(std::time::Duration::from_millis(300)).await; // This is a bug in Baidu. If rename a directory too fast, it will return 31001 errno without msg.
         files_rename(c!(guard), info.get_location(root.storage), "empty".to_string(), Duplicate::Error).await?;
     }
 
