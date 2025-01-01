@@ -53,7 +53,8 @@ async fn test_wrong(guard: &super::InitializeGuard, storage: StorageType) -> any
     let result = match storage {
         StorageType::Mocker => return Ok(()),
         StorageType::Lanzou => add_storage!(storages_lanzou_add(guard, name, "accounts/lanzou_wrong.toml")),
-        StorageType::Baidu => add_storage!(storages_baidu_add(guard, name, "accounts/baidu_wrong.toml", None))
+        StorageType::Baidu => add_storage!(storages_baidu_add(guard, name, "accounts/baidu_wrong.toml", None)),
+        StorageType::Pan123 => add_storage!(storages_pan123_add(guard, name, "accounts/pan123_wrong.toml")),
 
     };
     crate::assert_error::<_, wlist_native::common::exceptions::IncorrectStorageAccountError>(result)?;
@@ -67,6 +68,7 @@ async fn test_normal(guard: &super::InitializeGuard, storage: StorageType) -> an
             StorageType::Mocker => add_storage!(storages_mocker_add(guard, name, "accounts/mocker.toml"))?, // root = 0
             StorageType::Lanzou => add_storage!(storages_lanzou_add(guard, name, "accounts/lanzou_normal.toml"))?,
             StorageType::Baidu => add_storage!(storages_baidu_add(guard, name, "accounts/baidu_normal.toml", Some("accounts/baidu_token.toml")))?,
+            StorageType::Pan123 => add_storage!(storages_pan123_add(guard, name, "accounts/pan123_normal.toml"))?,
 
         })
     }
@@ -110,6 +112,7 @@ async fn test_normal(guard: &super::InitializeGuard, storage: StorageType) -> an
         StorageType::Mocker => add_storage!(storages_mocker_update(guard, info.id, "accounts/mocker_empty.toml"))?, // root = 3
         StorageType::Lanzou => add_storage!(storages_lanzou_update(guard, info.id, "accounts/lanzou_empty.toml"))?,
         StorageType::Baidu => add_storage!(storages_baidu_update(guard, info.id, "accounts/baidu_empty.toml"))?,
+        StorageType::Pan123 => add_storage!(storages_pan123_update(guard, info.id, "accounts/pan123_empty.toml"))?,
 
     };
     let info = wlist_native::core::client::storages::storages_get(super::c!(guard), info.id, false).await?.basic;
@@ -150,6 +153,7 @@ async fn test_normal(guard: &super::InitializeGuard, storage: StorageType) -> an
 #[test_case::test_case(StorageType::Mocker)]
 #[test_case::test_case(StorageType::Lanzou)]
 #[test_case::test_case(StorageType::Baidu)]
+#[test_case::test_case(StorageType::Pan123)]
 #[tokio::test]
 async fn entry_point(storage: StorageType) -> anyhow::Result<()> {
     let guard = super::initialize(true).await?;
