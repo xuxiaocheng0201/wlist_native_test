@@ -14,7 +14,7 @@ use wlist_native::common::data::files::options::Duplicate;
 use wlist_native::common::data::files::FileLocation;
 use wlist_native::core::client::download::download_request;
 use wlist_native::core::client::trash::{trash_delete, trash_trash};
-use wlist_native::core::client::upload::{upload_cancel, upload_confirm, upload_finish, upload_mkdir, upload_request, upload_stream};
+use wlist_native::core::client::upload::{upload_cancel, upload_confirm, upload_extra_md5s, upload_finish, upload_mkdir, upload_request, upload_stream};
 use wlist_native::core::helper::hasher::Md5Hasher;
 
 use crate::core::{c, InitializeGuard};
@@ -33,32 +33,39 @@ pub async fn test_none(guard: &InitializeGuard) -> anyhow::Result<()> {
 
 pub async fn upload(guard: &InitializeGuard, parent: FileLocation, name: String, data: Bytes, duplicate: Duplicate) -> anyhow::Result<FileInformation> {
     let len = data.remaining();
-    let (md5, md5s) = {
-        const CHUNK: usize = 4 << 20;
-        let md5 = Md5Hasher::new();
-        let mut md5s = Vec::new();
-        let mut i = 0;
-        loop {
-            let l = i * CHUNK;
-            let r = min((i + 1) * CHUNK, len);
-            if l >= r { break; }
-            let chunk = data.slice(l..r);
-            let ((), md5) = tokio::join!(
-                md5.update(chunk.clone()),
-                async {
-                    let md5 = Md5Hasher::new();
-                    md5.update(chunk).await;
-                    md5.finalize().await
-                },
-            );
-            md5s.push(md5);
-            i += 1;
-        }
-        let md5 = md5.finalize().await;
-        if md5s.is_empty() { md5s.push(md5.clone()); }
-        (md5, md5s)
+    let (md5, md5s) = match upload_extra_md5s(c!(guard), parent.storage).await? {
+        None => {
+            let md5 = Md5Hasher::new();
+            md5.update(data.clone()).await;
+            (md5.finalize().await, None)
+        },
+        Some(chunk) => {
+            let chunk = chunk.get();
+            let md5 = Md5Hasher::new();
+            let mut md5s = Vec::new();
+            let mut i = 0;
+            loop {
+                let l = i * chunk;
+                let r = min((i + 1) * chunk, len);
+                if l >= r { break; }
+                let chunk = data.slice(l..r);
+                let ((), md5) = tokio::join!(
+                    md5.update(chunk.clone()),
+                    async {
+                        let md5 = Md5Hasher::new();
+                        md5.update(chunk).await;
+                        md5.finalize().await
+                    },
+                );
+                md5s.push(md5);
+                i += 1;
+            }
+            let md5 = md5.finalize().await;
+            if md5s.is_empty() { md5s.push(md5.clone()); }
+            (md5, Some(md5s))
+        },
     };
-    let confirmation = upload_request(c!(guard), parent, name, len as u64, md5, Some(md5s), duplicate).await?;
+    let confirmation = upload_request(c!(guard), parent, name, len as u64, md5, md5s, duplicate).await?;
     if !confirmation.done {
         let information = upload_confirm(c!(guard), confirmation.token.clone()).await?;
         let mut set = JoinSet::new();
